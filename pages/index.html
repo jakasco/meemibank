@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="css/main.css" rel="stylesheet">
+</head>
+<body onload="lataaKuvat()">
+
+<div class="container" id="otsikko">
+    <h1>Wellcome to Memeland</h1>
+    <a href="index.html">Home</a>
+    <a href="mostpopular.html">Most popular</a>
+    <a href="allmemes.html">All memes</a>
+</div>
+<div>
+
+    <form method="POST" action="/logged" name="logged">
+        <input type="hidden" name="log" value="0" id="logForm">
+    </form>
+
+    <div class="container2">
+
+        <h2 id="hello">Profile name </h2>
+        <button id="myBtn3">Sign Up</button>
+        <div id="myModal2" class="modal">
+
+
+            <div class="modal-content">
+
+                <span class="close2">&times;</span>
+
+                <form  method="POST" action="/createAccount" id="createForm" onsubmit="return testPassword()">
+                    <label>Username: </label>   <input type="text" name="user" id="us"><br>
+                    <label>Password: </label>   <input type="text" name="pw1" id="pw1"><br>
+                    <label>Re-type Password:</label> <input type="text" name="pw2" id="pw2"><br>
+                    <button onclick="closeModal2()" type="submit" form="createForm" value="Submit" >Create</button>
+                </form>
+            </div>
+
+        </div>
+        <div>
+            <button id="myBtn4">Login</button>
+            <div id="myModal3" class="modal">
+
+
+                <div class="modal-content">
+
+                    <span class="close3">&times;</span>
+
+                    <form method="POST" action="/login" id="formLogin">
+                        <label>Username:</label> <input type="text" name="user" id="logUser"><br>
+                        <label>Password:</label>   <input type="text" name="pw" id="logPw"><br>
+                    </form>
+
+                    <button onclick="closeModal3()" type="submit" form="formLogin" value="Submit">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+
+        <button style="display:none" id="myBtn">Upload</button>
+        <form method="Post" action="/profileLogout" id="form"><input type = "hidden" name ="user" id="logInput" /></form> <button style="display: none" type="submit" form="form" value="Submit" id="nappi2">Logout</button>
+
+        <div id="myModal" class="modal">
+
+
+            <div class="modal-content">
+
+                <span class="close">&times;</span>
+
+                <form action="/upload" method="post" enctype="multipart/form-data" id="lomake">
+                    <label>Kuva, ääni tai video
+                        <input type="file" name="kuva" accept="audio/*,video/*,image/*">
+                    </label>
+                    <br>
+                    <input type="text" name="tag" placeholder="tagi">
+                    <br>
+                    <input type="text" name="kuva_teksti" placeholder="desc">
+                    <input type = "hidden" name ="user" id="logUpload" />
+                    <button type="submit" onclick="closeModal()">Lähetä</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div>
+<h1> HOME PAGE </h1>
+</div>
+
+
+<script src="js/main.js"></script>
+</body>
+
+<div>
+    <div id="loggaus">
+        <h5>CREATE NEW ACCOUNT</h5>
+        <h5>LOG IN</h5>
+    </div>
+<script>
+  const lataaKuvat = function() {
+      tarkastaKirjautuneet();
+  };
+</script>
+
+</html>
