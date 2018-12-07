@@ -1,3 +1,4 @@
+
 ul {
 
 
@@ -13,8 +14,8 @@ li {
 
 
 img{
-    height: 40%;
-    width: 40%;
+    height: 70%;
+    width: 70%;
     padding-left: 0%;
 }
 #myBtn3{
@@ -219,18 +220,24 @@ body{
     padding-top: 0;
 }
 
-
-#result {
-
-    margin-left: auto;
-    margin-right: auto;
+input{
+    border: 1px dotted #999;
+    border-radius: 0;
+    -webkit-appearance: none;
+}
+#mostPopular{
     width: 50%;
+    margin-left: 25%;
+
+    display: grid;
+    grid-template-columns: auto auto;
+
 }
 
 #loggaus{
     position: absolute;
     top: 10%;
-    left: 70%;
+    left: 72%;
 }
 label{
     display: inline-block;
@@ -240,22 +247,13 @@ label{
     text-align: right;
 }
 
-#popularDiv {
+.formicss{
+    width: 200px;
+    clear: both;
 
-  width: 50%;
-  display: block;
-  margin: auto;
-  border: solid 2px black;
-  min-height: 100px;
 }
 
-#newestDiv {
-
-  width: 50%;
-  display: block;
-  margin: auto;
-  border: solid 2px black;
-  min-height: 100px;
-
-
+.formicss input{
+    width: 100%;
+    clear: both;
 }

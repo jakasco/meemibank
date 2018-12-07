@@ -7,10 +7,7 @@ const connect = () => {
 // create the connection to database
 
   const connection = mysql.createConnection({
-    host: 'localhost',
-		user: 'root',
-		password: '',
-		database: 'some'
+
   });
   //Tarkastetaan saadaanko MySql yhteys
   connection.connect(function(error){
@@ -24,10 +21,10 @@ const connect = () => {
 };
 
 //Loggaa sisään jos pw ja username täsmäävät
-const login = (tunnus, salasana, ip, connection, callback) => {
+const login = (tunnus, salasana, ip, time, connection, callback) => {
 
   connection.execute(
-      "UPDATE kayttaja SET logged_in = CASE WHEN salasana ='"+salasana+"'  THEN 1 ELSE 0 END, ip = CASE WHEN salasana ='"+salasana+"' THEN '"+ip+"' ELSE NUll END WHERE kayttaja_nimi IN ('"+tunnus+"')",
+      "UPDATE kayttaja SET logged_in = CASE WHEN salasana ='"+salasana+"'  THEN 1 ELSE 0 END, ip = CASE WHEN salasana ='"+salasana+"' THEN '"+ip+"' ELSE NUll END, last_login = CASE WHEN salasana ='"+salasana+"' THEN '"+time+"' ELSE NUll END WHERE kayttaja_nimi IN ('"+tunnus+"')",
       (err, results, fields) => {
         callback();
       },
@@ -217,6 +214,7 @@ const insertTag = (data, connection, callback) => {
 
 //DATABASE
 const reportImage= (kuvaId, connection, callback)=> {
+  console.log("kuva id: "+kuvaId);
   connection.execute(
       'update kuvat set reported = 1 where kuva_id = '+kuvaId+';',
       (err, results) => {

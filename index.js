@@ -60,9 +60,9 @@ const report = (kuvaId, req, next) =>{
   })
 };
 
-//login eka vaihe  //tunnus, salasana, ip
-const login = (data1, data2, data3, res, next) => {
-  database.login(data1, data2, data3, connection, () => {
+//login eka vaihe  //tunnus, salasana, ip time
+const login = (data1, data2, data3, data4, res, next) => {
+  database.login(data1, data2, data3, data4, connection, () => {
     next();
   });
 };
@@ -285,7 +285,7 @@ app.post('/createAccount',  (req, res, next) => {
 app.post('/login',  (req, res, next) => {
   console.log("Login");
   console.log(req.body);
-  login(req.body.logUser, req.body.logPw, req.ip, req, next);
+  login(req.body.logUser, req.body.logPw, req.ip, req.body.aika, req, next);
 });
 //lähetä fronttiin logged_in joko 1 tai 0
 app.use('/login',  (req, res, next) => {
@@ -318,7 +318,7 @@ app.post('/profileLogout',  (req, res, next) => {
 app.post('/report', (req, res, next) =>{
   console.log("REPORT");
   console.log("KUVA jota reportetaaN: ", req.body);
-  const reportti = [req.body.report];
+  const reportti = [req.body.kuvaId];
   report(reportti, req, next);
   res.send(req.body);
 
