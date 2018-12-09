@@ -8,9 +8,9 @@ const connect = () => {
 
   const connection = mysql.createConnection({
     host: 'localhost',
-		user: 'root',
-		password: '',
-		database: 'some'
+  		user: 'root',
+  		password: '',
+  		database: 'some'
   });
   //Tarkastetaan saadaanko MySql yhteys
   connection.connect(function(error){
@@ -24,10 +24,10 @@ const connect = () => {
 };
 
 //Loggaa sisään jos pw ja username täsmäävät
-const login = (tunnus, salasana, ip, connection, callback) => {
+const login = (tunnus, salasana, ip, time, connection, callback) => {
 
   connection.execute(
-      "UPDATE kayttaja SET logged_in = CASE WHEN salasana ='"+salasana+"'  THEN 1 ELSE 0 END, ip = CASE WHEN salasana ='"+salasana+"' THEN '"+ip+"' ELSE NUll END WHERE kayttaja_nimi IN ('"+tunnus+"')",
+      "UPDATE kayttaja SET logged_in = CASE WHEN salasana ='"+salasana+"'  THEN 1 ELSE 0 END, ip = CASE WHEN salasana ='"+salasana+"' THEN '"+ip+"' ELSE NUll END, last_login = CASE WHEN salasana ='"+salasana+"' THEN '"+time+"' ELSE NUll END WHERE kayttaja_nimi IN ('"+tunnus+"')",
       (err, results, fields) => {
         callback();
       },
@@ -61,7 +61,7 @@ const select = (connection, callback) => {
   connection.query(
       'SELECT * FROM kuvat;',
       (err, results, fields) => {
-        console.log(err);
+      //  console.log(err);
         callback(results);
       },
   );
@@ -106,14 +106,25 @@ const insertUser = (data, connection, callback) => {
   console.log("sql done");
 };
 
+const insertView = (data, connection, callback) => {
+  connection.execute(
+      'INSERT INTO views (kuva_id, kayttaja_id, ei_kirjautunut_kayttaja) VALUES (?, ?, ?);',
+      data,
+      (err, results, fields) => {
+        console.log(err);
+        callback();
+      },
+  );
+};
+
 
 const insert = (data, connection, callback) => {
 
   connection.execute(
-      'INSERT INTO kuvat (kuva_id, kayttaja_nimi, URL, kuva_teksti, views, tykkaa, eitykkaa,tag) VALUES (?, ?, ?, ?, ?,?,?,?);',
+      'INSERT INTO kuvat (kuva_id, kayttaja_nimi, URL, kuva_teksti, views, tykkaa, eitykkaa,tag,upload_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
       data,
       (err, results, fields) => {
-        console.log(results); // results contains rows returned by server
+        console.log("insert results:",results); // results contains rows returned by server
         // console.log(fields); // fields contains extra meta data about results, if available
         console.log(err);
         callback();
@@ -158,6 +169,54 @@ const tykkaa = (id, connection, callback) => {
   );
 };
 
+const tarkastaTykkays = (kayttaja_nimi,id, connection, callback) => {
+    console.log("asdasdasdassdadasdsadas");
+  connection.execute(
+    "SELECT tykkaykset.tykkaa AS tt, tykkaykset.kuva_id AS ti, kuvat.kuva_id, kuvat.tykkaa FROM tykkaykset INNER JOIN kuvat ON tykkaykset.kuva_id = kuvat.kuva_id AND tykkaykset.kayttaja_nimi = '"+kayttaja_nimi+"'AND tykkaykset.kuva_id = "+id+" ",
+      (err, results, fields) => {
+        callback(results);
+      },
+  );
+};
+
+
+const tykkaa2 = (data, connection, callback) => {
+  console.log("data: "+data);
+  connection.execute(
+      'INSERT INTO tykkaykset (kuva_id, kayttaja_nimi, tykkaa, ala_tykkaa) VALUES (?, ?, ?, ?);',
+      data,
+      (err, results, fields) => {
+        console.log(err);
+        callback();
+      },
+  );
+};
+//SELECT tykkaykset.ala_tykkaa AS tt, tykkaykset.kuva_id AS ti, kuvat.kuva_id, kuvat.eitykkaa FROM tykkaykset INNER JOIN kuvat ON tykkaykset.kuva_id = kuvat.kuva_id AND tykkaykset.kayttaja_nimi = 'asd' AND tykkaykset.kuva_id = 1
+const tarkastaDisTykkays = (kayttaja_nimi, id, connection, callback) => {
+
+  connection.execute(
+    "SELECT tykkaykset.ala_tykkaa AS tt, tykkaykset.kuva_id AS ti, kuvat.kuva_id, kuvat.eitykkaa FROM tykkaykset INNER JOIN kuvat ON tykkaykset.kuva_id = kuvat.kuva_id AND tykkaykset.kayttaja_nimi = '"+kayttaja_nimi+"'AND tykkaykset.kuva_id = "+id+" ",
+      (err, results, fields) => {
+        console.log(results);
+        callback(results);
+      },
+  );
+};
+
+
+const dislike2 = (data, connection, callback) => {
+  console.log("data: "+data);
+  connection.execute(
+      'INSERT INTO tykkaykset (kuva_id, kayttaja_nimi, tykkaa, ala_tykkaa) VALUES (?, ?, ?, ?);',
+      data,
+      (err, results, fields) => {
+        console.log(err);
+        callback();
+      },
+  );
+};
+
+
 const haeDisTykkays = (data, connection, callback) => {
   connection.query(
       'SELECT * FROM kuvat WHERE kuva_id = "'+data+'";',
@@ -167,6 +226,17 @@ const haeDisTykkays = (data, connection, callback) => {
       },
   );
 };
+
+//hae käyttäjän id nimen perusteella
+const getUserId = (data, connection, callback) => {
+  connection.query(
+      'SELECT kayttaja_id FROM kayttaja WHERE kayttaja_nimi = "'+data+'";',
+      (err, results, fields) => {
+        callback(results);
+      },
+  );
+};
+
 
 
 const dislike = (data, connection, callback) => {
@@ -179,10 +249,34 @@ const dislike = (data, connection, callback) => {
   );
 };
 
+
+
+const dislike2update = (data, data2, connection, callback) => {
+  // simple query
+  connection.execute(
+      'UPDATE tykkaykset SET tykkaa = 0, ala_tykkaa = 1 WHERE kayttaja_nimi = "'+data+'" AND kuva_id = "'+data2+'"',
+      (err, results, fields) => {
+        callback();
+      },
+  );
+};
+
+const tykkaa2update = (data, data2, connection, callback) => {
+  // simple query
+  connection.execute(
+      'UPDATE tykkaykset SET tykkaa = 1, ala_tykkaa = 0 WHERE kayttaja_nimi = "'+data+'" AND kuva_id = "'+data2+'"',
+      (err, results, fields) => {
+        callback();
+      },
+  );
+};
+
+
+
 const addComment = (data, connection, callback) => {
   console.log("add comment: "+data);
   connection.execute(
-      'INSERT INTO kommentit (kuva_id, kayttaja_id, kommentti) VALUES (?, ?, ?);',
+      'INSERT INTO kommentit (kuva_id, kayttaja_nimi, kommentti) VALUES (?, ?, ?);',
       data,
       (err, results, fields) => {
         console.log(err);
@@ -194,10 +288,44 @@ const addComment = (data, connection, callback) => {
 const selectComments = (data,connection, callback) => {
  // console.log("data: "+data);
   connection.query(
-      'SELECT kommentti, kuva_id FROM kommentit WHERE kuva_id = '+data+';',
+      'SELECT kommentti, kuva_id, kayttaja_nimi FROM kommentit WHERE kuva_id = '+data+';',
       (err, results, fields) => {
         console.log(err);
         callback(results);
+      },
+  );
+};
+
+
+//View lauseet
+
+//tarkasta onko käyttäjä katsonut kuvan
+const checkUserView = (data, connection, callback) => {
+  console.log("kuva id : "+data);
+  connection.query(
+      'SELECT kayttaja_id FROM views WHERE kuva_id = "'+data+'";',
+      (err, results, fields) => {
+        callback(results);
+      },
+  );
+};
+
+//laske yhden kuvan kaikki viewit
+const countViews = (data,connection, callback) => {
+  connection.query(
+      'SELECT COUNT(kuva_id) AS viewCount FROM views WHERE kuva_id = '+data+';',
+      (err, results, fields) => {
+        callback(results);
+      },
+  );
+};
+
+//laske yhden kuvan kaikki viewit
+const updateViews = (kuvaId, views ,connection, callback) => {
+  connection.query(
+      'UPDATE kuvat SET views = '+views+' WHERE kuva_id = '+kuvaId+';',
+      (err, results, fields) => {
+        callback();
       },
   );
 };
@@ -217,6 +345,7 @@ const insertTag = (data, connection, callback) => {
 
 //DATABASE
 const reportImage= (kuvaId, connection, callback)=> {
+  console.log("kuva id: "+kuvaId);
   connection.execute(
       'update kuvat set reported = 1 where kuva_id = '+kuvaId+';',
       (err, results) => {
@@ -234,8 +363,12 @@ module.exports = {
   insertA: insertA,
   haeTykkays: haeTykkays,
   tykkaa: tykkaa,
+  tykkaa2: tykkaa2,
+  tykkaa2update: tykkaa2update,
   haeDisTykkays: haeDisTykkays,
   dislike: dislike,
+  dislike2: dislike2,
+  dislike2update: dislike2update,
   addComment: addComment,
   selectComments: selectComments,
   insertUser: insertUser,
@@ -245,4 +378,11 @@ module.exports = {
   checkIfLogged: checkIfLogged,
   checkIP: checkIP,
   reportImage: reportImage,
+  insertView: insertView,
+  getUserId: getUserId,
+  checkUserView: checkUserView,
+  countViews: countViews,
+  updateViews: updateViews,
+  tarkastaTykkays: tarkastaTykkays,
+  tarkastaDisTykkays: tarkastaDisTykkays,
 };

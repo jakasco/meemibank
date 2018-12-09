@@ -40,6 +40,38 @@ const insertToDB = (data, res, next) => {
   });
 };
 
+const tykkaa2update = (nimi, id, res, next) => {
+  database.tykkaa2update(nimi, id, connection, () => {
+    next();
+  });
+};
+
+const tykkaa2 = (data, res, next) => {
+  database.tykkaa2(data, connection, () => {
+    next();
+  });
+};
+
+const dislike2 = (nimi, res, next) => {
+  database.dislike2(nimi,connection, () => {
+    next();
+  });
+};
+
+const dislike2update = (nimi, id, res, next) => {
+  database.dislike2update(nimi, id, connection, () => {
+    next();
+  });
+};
+
+
+
+const insertView = (data, res, next) => {
+  database.insertView(data, connection, () => {
+    next();
+  });
+};
+
 const addComment= (data, res, next) => {
   database.addComment(data, connection, () => {
     next();
@@ -60,9 +92,9 @@ const report = (kuvaId, req, next) =>{
   })
 };
 
-//login eka vaihe  //tunnus, salasana, ip
-const login = (data1, data2, data3, res, next) => {
-  database.login(data1, data2, data3, connection, () => {
+//login eka vaihe  //tunnus, salasana, ip time
+const login = (data1, data2, data3, data4, res, next) => {
+  database.login(data1, data2, data3, data4, connection, () => {
     next();
   });
 };
@@ -99,6 +131,23 @@ const selectAll = (req, next) => {
   });
 };
 
+//tarkasta onko käyttäjä tykännyt kuvasta
+const tarkastaTykkays = (kayttaja_nimi,id,req, next) => {
+  database.tarkastaTykkays(kayttaja_nimi,id,connection, (results) => {
+    req.custom = results;
+    next();
+  });
+};
+
+//tarkasta onko käyttäjä tykännyt kuvasta
+const tarkastaDisTykkays = (kayttaja_nimi,id,req, next) => {
+  database.tarkastaDisTykkays(kayttaja_nimi,id,connection, (results) => {
+    req.custom = results;
+    next();
+  });
+};
+
+
 //logout
 const logout = (data,  res, next) => {
   database.logout(data,  connection, () => {
@@ -110,6 +159,35 @@ const logout = (data,  res, next) => {
 const haeTykkays = (data, req, next) => {
   console.log('haetykkäys');
   database.haeTykkays(data, connection, (results) => {
+  //  req.custom = results;
+    next();
+  });
+};
+
+const getUserId = (data, req, next) => {
+  console.log('hae käyttäjä id');
+  database.getUserId(data, connection, (results) => {
+    req.custom = results;
+    next();
+  });
+};
+
+const countViews = (data, req, next) => {
+  database.countViews(data, connection, (results) => {
+    req.custom = results;
+    next();
+  });
+};
+
+const updateViews = (kuvaId, views, req, next) => {
+  database.updateViews(kuvaId, views, connection, (results) => {
+    next();
+  });
+};
+
+const checkUserView = (data, req, next) => {
+  console.log('katso onko käyttäjä jo antanut viewin');
+  database.checkUserView(data, connection, (results) => {
     req.custom = results;
     next();
   });
@@ -142,6 +220,8 @@ const dislike = (data, res, next) => {
     next();
   });
 };
+
+
 
 
 
@@ -208,14 +288,13 @@ app.use('/loggedUsers', (req, res,next) => {
 
 //hae päivitetyt tiedot tietokannasta
 app.use('/loadComments', (req, res, next) => {
- // console.log(req.body);
   const data = req.body.Id;
  // console.log(data);
   selectComments(data, req, next);
 });
 //lähetä tiedot selaimeen//
 app.use('/loadComments', (req, res) => {
- // console.log(req.custom);
+  console.log("loadcomment: ",req.custom);
   res.send(req.custom);
 });
 
@@ -225,19 +304,75 @@ app.use('/loadComments', (req, res) => {
 
 //Tykkays systeemi
 app.post('/like', (req, res, next) => {//
-  console.log('body', req.body);
-  const data = req.body.kuvaId;
-  haeTykkays(data, req, next);
+tarkastaTykkays(req.body.kirjautunut,req,next);
+});
+
+
+app.use('/like', (req, res, next) => {
+  console.log("reqcus:",req.custom);
+
+  if(req.custom.length == 0){
+    console.log(req.body);
+  const data = [req.body.kuvaId, req.body.kirjautunut, 1, 0];
+  console.log(data);
+  tykkaa2(data, req, next);
+}else{
+  console.log("On jo tykätty");
+  next();
+}
 });
 
 app.use('/like', (req, res, next) => {
+
+  if(req.custom.length == 0){
   const data = req.body.kuvaId;
-  console.log("Tykkää", req.body);
-  tykkaa(data, req, next);
+   tykkaa(req.body.kuvaId, req, next);
+   tykkaa2update(req.body.kirjautunut,req.body.kuvaId, req, next);
+  }else{
+    console.log("On jo tykätty 2");
+  }
+  console.log("resss",req.custom);
   res.send(req.custom);
 });
 
+
+
 //Dislike systeemi
+app.post('/dislike', (req, res, next) => {//
+  console.log("asda",req.body);
+tarkastaDisTykkays(req.body.kirjautunut,req.body.kuvaId,req,next);
+});
+
+
+app.use('/dislike', (req, res, next) => {
+  console.log("reqcus:",req.custom);
+
+  if(req.custom.length == 0){
+  const data = [req.body.kuvaId, req.body.kirjautunut, 0, 1];
+  console.log(data);
+  dislike2(data, req, next);
+}else{
+  console.log("On jo eitykätty");
+  next();
+}
+});
+
+app.use('/dislike', (req, res, next) => {
+
+  if(req.custom.length == 0){
+  const data = req.body.kuvaId;
+   dislike(req.body.kuvaId, req, next);
+   dislike2update(req.body.kirjautunut,req.body.kuvaId, req, next);
+  }else{
+    console.log("On jo eitykätty 2");
+  }
+  console.log("resss",req.custom);
+  res.send(req.custom);
+});
+/**
+
+
+
 app.post('/dislike', (req, res, next) => {//
  // console.log('body', req.body);
   const data = req.body.kuvaId;
@@ -249,7 +384,7 @@ app.use('/dislike', (req, res, next) => {
   dislike(data, req, next);
   res.send(req.custom);
 });
-
+*/
 
 
 
@@ -257,8 +392,8 @@ app.use('/dislike', (req, res, next) => {
 
 //kommentti systeemi
 app.post('/comment', (req, res, next) => {//
- // console.log('body', req.body);
-  const data = [req.body.kuvaId, 0, req.body.comment];
+  console.log('body', req.body);
+  const data = [req.body.kuvaId, req.body.user , req.body.comment];
   addComment(data, req, next);
 
   const json = {
@@ -285,7 +420,7 @@ app.post('/createAccount',  (req, res, next) => {
 app.post('/login',  (req, res, next) => {
   console.log("Login");
   console.log(req.body);
-  login(req.body.logUser, req.body.logPw, req.ip, req, next);
+  login(req.body.logUser, req.body.logPw, req.ip, req.body.aika, req, next);
 });
 //lähetä fronttiin logged_in joko 1 tai 0
 app.use('/login',  (req, res, next) => {
@@ -318,28 +453,72 @@ app.post('/profileLogout',  (req, res, next) => {
 app.post('/report', (req, res, next) =>{
   console.log("REPORT");
   console.log("KUVA jota reportetaaN: ", req.body);
-  const reportti = [req.body.report];
+  const reportti = [req.body.kuvaId];
   report(reportti, req, next);
   res.send(req.body);
-
 });
 
 
+//Viewi systeemi
+//katsotaan alkuun kuka käyttäjä katsoo kuvaa
+app.post('/view', (req, res, next) =>{
+  console.log("View count");
+  console.log("Req.body: ", req.body);
+  getUserId(req.body.user,req,next);
+});
 
+//seuraavaksi katsotaan onko hän jo katsonut kuvan kertaalleen
+app.use('/view', (req, res, next) =>{
+  console.log("req1:",req.custom);
+//  const tempUser = req.custom[0].kayttaja_id;
+  try{
+  checkUserView(req.body.kuvaId, res, next);
+}catch{
+  console.log("ei kirjautunut");
+}
 
+});
+app.use('/view', (req, res, next) =>{
+//  const tempUser2 = req.custom[0].kayttaja_id;
+  //jos käyttäjä ei ole katsonut kuvaa, annetaan viewi
+//  console.log("tempUser: "+tempUser+", tempUser2:"+tempUser2);
+//  if(tempUser!=tempUser2){
+  try{
+  const data = [ req.body.kuvaId, req.custom[0].kayttaja_id, null];
+  insertView(data, res, next);
+}catch{
+
+}
+//}else{
+//}
+});
+
+app.use('/view', (req, res, next) =>{
+  countViews(req.body.kuvaId,req, next);
+});
+
+app.use('/view', (req, res, next) =>{
+  updateViews(req.body.kuvaId,req.custom[0].viewCount,req, next);
+});
+
+app.use('/view', (req, res, next) =>{
+  console.log("final req.custom: ",req.custom[0].viewCount);
+  res.send(req.custom);
+});
 
 
 
 //tallenna tiedosto
 app.post('/upload', upload.single('kuva'), (req, res, next) => {
   console.log(req.body);
-  console.log(req.file);
+  console.log("aika:"+req.body.time);
+  console.log("file:",req.file);
   next();
 });
 
 // tallenna tiedot tietokantaan
 app.use('/upload', (req, res, next) => {
-  const data = [0, req.body.user, req.file.filename, 'text', 0, 0, 0,req.body.tag];
+  const data = [0, req.body.user, req.file.filename, 'text', 0, 0, 0,req.body.tag,req.body.time];
   insertToDB(data, res, next);
 });
 //hae päivitetyt tiedot tietokannasta
@@ -348,7 +527,7 @@ app.use('/upload', (req, res, next) => {
 });
 //lähetä tiedot selaimeen//
 app.use('/upload', (req, res) => {
-  console.log(req.custom); //kaikki kuvat
+//  console.log(req.custom); //kaikki kuvat
   res.send(req.custom);
 });
 
