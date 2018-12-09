@@ -2,40 +2,20 @@
 
 const lomake = document.querySelector('#lomake');
 const lista = document.querySelector('#result');
+const upTime = document.getElementById('uploadTime');
 
-
-const lahetaLomake = (evt) => {
-  evt.preventDefault();
-  const fd = new FormData(lomake);
-  console.log(fd.values);
-  const asetukset = {
-    method: 'post',
-    body: fd,
-  };
-  fetch('/upload', asetukset).then((response) => {
-    return response.json();
-  }).then((json) => {
-    const polku = 'files/';
-    lista.innerHTML = '';
-    console.log(json.length);
-    json.forEach(item => {
-
-      const li = document.createElement('li');
-      const kuva = document.createElement('img');
-      kuva.src = polku + item.ufile;
-      li.appendChild(kuva);
-      lista.appendChild(li);
-
-   });
-
-  });
-};
-
-
-
-lomake.addEventListener('submit', lahetaLomake);
-
-
+function getTime(){
+  const currentdate = new Date();
+  //tämän hetkinen aika
+  let datetime = currentdate.getDate() + "/"
+      + (currentdate.getMonth()+1)  + "/"
+      + currentdate.getFullYear() + " @ "
+      + currentdate.getHours() + ":"
+      + currentdate.getMinutes() + ":"
+      + currentdate.getSeconds();
+  console.log("Gettime return: "+datetime);
+  return datetime;
+}
 
 // Get the modal
 const modal = document.getElementById('myModal');
@@ -128,7 +108,7 @@ window.onclick = function(event) {
 
 
 ///////////////////////////////////////////////////////////////////////
-function tarkastaKirjautuneet(){
+function tarkastaKirjautuneet(callback){
   //h1 alussa jossa sanotaan hello, username
   const hello = document.getElementById('hello');
   //Katsotaan kuka käyttäjä on logannut sisälle, jos on, niin piilotetaan ja näytetään tietyt elementit
@@ -136,17 +116,25 @@ function tarkastaKirjautuneet(){
     return response.json();
   }).then((json) => {
     try{
-      console.log("loggesUsers json: ",json[0].kayttaja_nimi);
-      hello.innerText = "Hello, "+json[0].kayttaja_nimi;
+    console.log("loggesUsers json: ",json[0].kayttaja_nimi);
+    hello.innerText = "Hello, "+json[0].kayttaja_nimi;
     //kirjautuneen käyttäjän tiedot formeihin
     logInput.value = json[0].kayttaja_nimi;
     logUpload.value = json[0].kayttaja_nimi;
+    userLabel.innerHTML = json[0].kayttaja_nimi;
     hideElements();
     }catch{
       console.log("Not logged in");
     }
+    callback();
   });
+}
 
+const kirjautunut = "ei kirjautunut";
+
+//palautetaan käyttäjä nimi callbackin jälkeen
+function kayttaja(){
+  return userLabel.innerHTML;
 }
 
 //create account
@@ -166,6 +154,9 @@ const createForm2 = document.getElementById('formLogin');
 //logout
 const logoutNappi = document.getElementById('nappi2');
 const logInput = document.getElementById('logInput');
+
+//username
+const userLabel = document.getElementById('userLabel');
 
 
 
@@ -282,7 +273,11 @@ function createModal(id,kuva){
 const modal = '<div id="mo'+id+'" class="modal"> '
  +'  <div class="modal-content">'
  +' <img src="files/'+kuva+'" width=700px; height = 700px />'
- +' <form id="f'+id+'"></form>'
+ +' <form id="fl'+id+'"></form>' //like
+ +' <form id="fd'+id+'"></form>' //dislike
+ +' <form id="fc'+id+'"></form>' //comment
+ +' <form id="fr'+id+'"></form>' //report
+  +' <ul id="fcArea'+id+'"></ul>' //report
      +'      <button onclick="suljeModal('+id+')">Close</button>'
  +'  </div>'
 +'  </div>';
@@ -290,14 +285,68 @@ return modal; //palauttaa string, joka laitetaan innerHTML:n
 }
 
 //muokkaa modalin sisältö
-function editModal(id,like){
-const f = document.getElementById('f'+id);
-f.innerHTML = like;
+function editModal(id,i,json,like,dislike,comment,report){
+const fl = document.getElementById('fl'+id);
+const fd = document.getElementById('fd'+id);
+const fc = document.getElementById('fc'+id);
+const fr = document.getElementById('fr'+id);
+const commentArea = document.createElement('ul');
+
+//LIKE
+fl.method = 'post';
+fl.action = '/like';
+fl.id = 'form' + id;
+fl.innerHTML = like;
+
+const likeNum = document.getElementById("likeId"+id);
+
+fl.addEventListener('submit', function(event) {
+lahetaLomake2(event,i,likeNum,json);});
+
+
+//DISLIKE
+fd.innerHTML = dislike;
+
+fd.method = 'post';
+fd.action = '/dislike';
+fd.id = 'dform' + id;
+
+const dislikeNum = document.getElementById("dislikeId"+id);
+
+fd.addEventListener('submit', function(event) {
+lahetaLomake3(event,i,dislikeNum,json);});
+
+//COMMENTS
+fc.innerHTML = comment;
+
+fc.method = 'post';
+fc.action = '/comment';
+fc.id = 'comment' + id;
+
+const commentValue = fc.querySelector('input'); //otetaan kommentin sisältö
+
+fc.addEventListener('submit', function(event) {
+lahetaLomake4(event,i,commentValue,json);});
+
+fr.innerHTML = report;
+
+fr.method= 'post';
+fr.action = '/report';
+fr.id = 'report' + id;
+fr.addEventListener('submit', function(event) {
+lahetaLomake5(event,i,json);});
+
+//päivitä kommentti kenttä
+const fcArea = document.getElementById("fcArea"+id);
+updateKomments(fcArea,id);
+
 }
 
-
 function avaaModal(id){
-  console.log("AVAA");
+///
+console.log("Avaa modal");
+const viewI = document.getElementById('viewInput'+id);
+console.log("views value: "+viewI.value);
 const modal = document.getElementById('mo'+id);
 modal.style.display = "block";
 }
@@ -307,11 +356,54 @@ const modal = document.getElementById('mo'+id);
 modal.style.display = "none";
 }
 
+function randomJarjestys(json) {
+    for (let i = json.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        let temp = json[i];
+        json[i] = json[j];
+        json[j] = temp;
+    }
+    return json;
+}
+
 
 //Scriptit
 //
 //
 //
+
+//uplaod
+const lahetaLomake = (evt) => {
+  evt.preventDefault();
+
+  //uppaus aika ylös
+  let datetime = getTime();
+  upTime.value = datetime;
+
+  const fd = new FormData(lomake);
+  console.log(fd);
+  const asetukset = {
+    method: 'post',
+    body: fd,
+  };
+  fetch('/upload', asetukset).then((response) => {
+    return response.json();
+  }).then((json) => {
+    const polku = 'files/';
+    lista.innerHTML = '';
+    console.log(json.length);
+    json.forEach(item => {
+
+      const li = document.createElement('li');
+      const kuva = document.createElement('img');
+      kuva.src = polku + item.ufile;
+      li.appendChild(kuva);
+      lista.appendChild(li);
+   });
+  });
+};
+
+lomake.addEventListener('submit', lahetaLomake);
 
 //tykkaa
 const lahetaLomake2 = (evt,kuvaId,likeNum,json) => {
@@ -355,6 +447,26 @@ fetch('/dislike', asetukset).then((response) => {
 });
 };
 
+//kommentoi
+const lahetaLomake4 = (evt,kuvaId,kommentti,json) => {
+evt.preventDefault();
+const fd = {};
+fd.comment = kommentti.value;
+fd.kuvaId = kuvaId;
+console.log(fd);
+const asetukset = {
+ method: 'post',
+ body: JSON.stringify(fd),
+ headers: {
+   'Content-type': 'application/json',
+ },
+};
+fetch('/comment', asetukset).then((response) => {
+ return response.json();
+}).then((json) => {
+ alert(json.success);
+});
+};
 
 //Reportti
 const lahetaLomake5 = (evt,kuvaId,json) => {
@@ -375,13 +487,13 @@ fetch('/report', asetukset).then((response) => {
 });
 };
 
-//kommentoi
-const lahetaLomake4 = (evt,kuvaId,kommentti,json) => {
+//Views
+const lahetaLomake6 = (evt,kuvaId,kirjautunut) => {
 evt.preventDefault();
+console.log("Views");
 const fd = {};
-fd.comment = kommentti.value;
 fd.kuvaId = kuvaId;
-console.log(fd);
+fd.user = kirjautunut;
 const asetukset = {
  method: 'post',
  body: JSON.stringify(fd),
@@ -389,10 +501,11 @@ const asetukset = {
    'Content-type': 'application/json',
  },
 };
-fetch('/comment', asetukset).then((response) => {
+fetch('/view', asetukset).then((response) => {
  return response.json();
 }).then((json) => {
- alert(json.success);
+ console.log("View json: ",json);
+ console.log("View json: ",json[0].viewCount);
 });
 };
 
@@ -418,13 +531,6 @@ fetch('/loadComments', asetukset).then((response) => {
    commentArea.appendChild(li);
  });
 });
-}
-
-function muokkaaFormit(formi,n){
-formi.method = 'post';
-formi.action = '/comment';
-formi.id = 'comment' + n;
-return formi;
 }
 
 

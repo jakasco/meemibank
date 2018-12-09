@@ -7,7 +7,10 @@ const connect = () => {
 // create the connection to database
 
   const connection = mysql.createConnection({
-
+    host: 'localhost',
+  		user: 'root',
+  		password: '',
+  		database: 'some'
   });
   //Tarkastetaan saadaanko MySql yhteys
   connection.connect(function(error){
@@ -103,14 +106,25 @@ const insertUser = (data, connection, callback) => {
   console.log("sql done");
 };
 
+const insertView = (data, connection, callback) => {
+  connection.execute(
+      'INSERT INTO views (kuva_id, kayttaja_id, ei_kirjautunut_kayttaja) VALUES (?, ?, ?);',
+      data,
+      (err, results, fields) => {
+        console.log(err);
+        callback();
+      },
+  );
+};
+
 
 const insert = (data, connection, callback) => {
 
   connection.execute(
-      'INSERT INTO kuvat (kuva_id, kayttaja_nimi, URL, kuva_teksti, views, tykkaa, eitykkaa,tag) VALUES (?, ?, ?, ?, ?,?,?,?);',
+      'INSERT INTO kuvat (kuva_id, kayttaja_nimi, URL, kuva_teksti, views, tykkaa, eitykkaa,tag,upload_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
       data,
       (err, results, fields) => {
-        console.log(results); // results contains rows returned by server
+        console.log("insert results:",results); // results contains rows returned by server
         // console.log(fields); // fields contains extra meta data about results, if available
         console.log(err);
         callback();
@@ -165,6 +179,17 @@ const haeDisTykkays = (data, connection, callback) => {
   );
 };
 
+//hae käyttäjän id nimen perusteella
+const getUserId = (data, connection, callback) => {
+  connection.query(
+      'SELECT kayttaja_id FROM kayttaja WHERE kayttaja_nimi = "'+data+'";',
+      (err, results, fields) => {
+        callback(results);
+      },
+  );
+};
+
+
 
 const dislike = (data, connection, callback) => {
   // simple query
@@ -195,6 +220,40 @@ const selectComments = (data,connection, callback) => {
       (err, results, fields) => {
         console.log(err);
         callback(results);
+      },
+  );
+};
+
+
+//View lauseet
+
+//tarkasta onko käyttäjä katsonut kuvan
+const checkUserView = (data, connection, callback) => {
+  console.log("kuva id : "+data);
+  connection.query(
+      'SELECT kayttaja_id FROM views WHERE kuva_id = "'+data+'";',
+      (err, results, fields) => {
+        callback(results);
+      },
+  );
+};
+
+//laske yhden kuvan kaikki viewit
+const countViews = (data,connection, callback) => {
+  connection.query(
+      'SELECT COUNT(kuva_id) AS viewCount FROM views WHERE kuva_id = '+data+';',
+      (err, results, fields) => {
+        callback(results);
+      },
+  );
+};
+
+//laske yhden kuvan kaikki viewit
+const updateViews = (kuvaId, views ,connection, callback) => {
+  connection.query(
+      'UPDATE kuvat SET views = '+views+' WHERE kuva_id = '+kuvaId+';',
+      (err, results, fields) => {
+        callback();
       },
   );
 };
@@ -243,4 +302,9 @@ module.exports = {
   checkIfLogged: checkIfLogged,
   checkIP: checkIP,
   reportImage: reportImage,
+  insertView: insertView,
+  getUserId: getUserId,
+  checkUserView: checkUserView,
+  countViews: countViews,
+  updateViews: updateViews,
 };

@@ -10,6 +10,7 @@ CREATE TABLE kuvat
   eitykkaa INT,
   tag VARCHAR(40),
   reported INT,
+  upload_time VARCHAR(40),
   PRIMARY KEY (kuva_id)
 );
 

@@ -40,6 +40,12 @@ const insertToDB = (data, res, next) => {
   });
 };
 
+const insertView = (data, res, next) => {
+  database.insertView(data, connection, () => {
+    next();
+  });
+};
+
 const addComment= (data, res, next) => {
   database.addComment(data, connection, () => {
     next();
@@ -110,6 +116,35 @@ const logout = (data,  res, next) => {
 const haeTykkays = (data, req, next) => {
   console.log('haetykkäys');
   database.haeTykkays(data, connection, (results) => {
+    req.custom = results;
+    next();
+  });
+};
+
+const getUserId = (data, req, next) => {
+  console.log('hae käyttäjä id');
+  database.getUserId(data, connection, (results) => {
+    req.custom = results;
+    next();
+  });
+};
+
+const countViews = (data, req, next) => {
+  database.countViews(data, connection, (results) => {
+    req.custom = results;
+    next();
+  });
+};
+
+const updateViews = (kuvaId, views, req, next) => {
+  database.updateViews(kuvaId, views, connection, (results) => {
+    next();
+  });
+};
+
+const checkUserView = (data, req, next) => {
+  console.log('katso onko käyttäjä jo antanut viewin');
+  database.checkUserView(data, connection, (results) => {
     req.custom = results;
     next();
   });
@@ -321,25 +356,62 @@ app.post('/report', (req, res, next) =>{
   const reportti = [req.body.kuvaId];
   report(reportti, req, next);
   res.send(req.body);
-
 });
 
 
+//Viewi systeemi
+//katsotaan alkuun kuka käyttäjä katsoo kuvaa
+app.post('/view', (req, res, next) =>{
+  console.log("View count");
+  console.log("Req.body: ", req.body);
+  getUserId(req.body.user,req,next);
+});
 
+//seuraavaksi katsotaan onko hän jo katsonut kuvan kertaalleen
+app.use('/view', (req, res, next) =>{
+  console.log("req1:",req.custom);
+//  const tempUser = req.custom[0].kayttaja_id;
+  checkUserView(req.body.kuvaId, res, next);
+});
+app.use('/view', (req, res, next) =>{
+//  const tempUser2 = req.custom[0].kayttaja_id;
+  //jos käyttäjä ei ole katsonut kuvaa, annetaan viewi
+//  console.log("tempUser: "+tempUser+", tempUser2:"+tempUser2);
+//  if(tempUser!=tempUser2){
+    console.log("Käyttäjä ei ole katsonut kuvaa!");
+  const data = [ req.body.kuvaId, req.custom[0].kayttaja_id, null];
+  insertView(data, res, next);
+//}else{
+  console.log("Kuva jo katsottu!");
+//}
+});
 
+app.use('/view', (req, res, next) =>{
+  countViews(req.body.kuvaId,req, next);
+});
+
+app.use('/view', (req, res, next) =>{
+  updateViews(req.body.kuvaId,req.custom[0].viewCount,req, next);
+});
+
+app.use('/view', (req, res, next) =>{
+  console.log("final req.custom: ",req.custom[0].viewCount);
+  res.send(req.custom);
+});
 
 
 
 //tallenna tiedosto
 app.post('/upload', upload.single('kuva'), (req, res, next) => {
   console.log(req.body);
-  console.log(req.file);
+  console.log("aika:"+req.body.time);
+  console.log("file:",req.file);
   next();
 });
 
 // tallenna tiedot tietokantaan
 app.use('/upload', (req, res, next) => {
-  const data = [0, req.body.user, req.file.filename, 'text', 0, 0, 0,req.body.tag];
+  const data = [0, req.body.user, req.file.filename, 'text', 0, 0, 0,req.body.tag,req.body.time];
   insertToDB(data, res, next);
 });
 //hae päivitetyt tiedot tietokannasta
@@ -348,7 +420,7 @@ app.use('/upload', (req, res, next) => {
 });
 //lähetä tiedot selaimeen//
 app.use('/upload', (req, res) => {
-  console.log(req.custom); //kaikki kuvat
+//  console.log(req.custom); //kaikki kuvat
   res.send(req.custom);
 });
 
