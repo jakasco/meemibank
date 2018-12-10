@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Latest Memes</title>
+    <link href="css/main.css" rel="stylesheet">
+</head>
+<body onload="lataaKuvat()">
+
+<div class="sivupalkki">
+    <h3>Menu</h3>
+    <a href="index.html">Home</a>
+    <a href="mostpopular.html">Most popular</a>
+    <a href="allmemes.html">All memes</a>
+    <a href="newestMemes.html">Latest memes</a>
+    <h5 id="userLabel">a</h5>
+</div>
+
+<div class="container" id="otsikko">
+    <h1>Wellcome to Memeland</h1>
+</div>
+<div>
+    <form method="POST" action="/logged" name="logged">
+        <input type="hidden" name="log" value="0" id="logForm">
+    </form>
+    <div class="container2">
+        <h2 id="hello">Profile name </h2>
+        <button id="myBtn3">Sign Up</button>
+        <div id="myModal2" class="modal">
+            <div class="modal-content">
+                <span class="close2">&times;</span>
+                <form  method="POST" action="/createAccount" id="createForm" onsubmit="return testPassword()">
+                    <label>Username: </label>   <input type="text" name="user" id="us"><br>
+                    <label>Password: </label>   <input type="text" name="pw1" id="pw1"><br>
+                    <label>Re-type Password:</label> <input type="text" name="pw2" id="pw2"><br>
+                    <button onclick="closeModal2()" type="submit" form="createForm" value="Submit" >Create</button>
+                </form>
+            </div>
+        </div>
+        <div>
+            <button id="myBtn4">Login</button>
+            <div id="myModal3" class="modal">
+                <div class="modal-content">
+                    <span class="close3">&times;</span>
+                    <form method="POST" action="/login" id="formLogin">
+                        <label>Username:</label> <input type="text" name="user" id="logUser"><br>
+                        <label>Password:</label>   <input type="text" name="pw" id="logPw"><br>
+                        <label>Aika</label>   <input type="text" name="time" id="logTime"> <br>
+                    </form>
+                    <button onclick="closeModal3()" type="submit" form="formLogin" value="Submit">Login</button>
+                </div>
+            </div>
+        </div>
+        <button style="display:none" id="myBtn">Upload</button>
+        <form method="Post" action="/profileLogout" id="form"><input type = "hidden" name ="user" id="logInput" /></form> <button style="display: none" type="submit" form="form" value="Submit" id="nappi2">Logout</button>
+        <div id="myModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <form action="/upload" method="post" enctype="multipart/form-data" id="lomake">
+                    <label>Kuva, ääni tai video
+                        <input type="file" name="kuva" accept="audio/*,video/*,image/*">
+                    </label>
+                    <br>
+                    <input type="text" name="tag" placeholder="tagi">
+                    <br>
+                    <input type="text" name="kuva_teksti" placeholder="desc">
+                    <input type = "hidden" name ="user" id="logUpload" />
+                    <input type="hidden" name="time" id="uploadTime"/>
+                    <button type="submit" onclick="closeModal()">Lähetä</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<ul id="result">
+</ul>
+<div id="popularDiv">
+  <h1> Latest Memes </h1>
+  <ul id="mostPopular">
+  </ul>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+
+<div>
+    <div id="loggaus">
+        <h5>CREATE NEW ACCOUNT</h5>
+        <h5>LOG IN</h5>
+    </div>
+<script>
+
+  const lataaKuvat = function() {
+
+      let kirjautunut;
+      tarkastaKirjautuneet(function(){
+      kirjautunut =  kayttaja();
+      lataaSuosituimmat(kirjautunut);
+      });
+  };
+
+ const lataaSuosituimmat = function(kirjautunut){
+
+   console.log("kirjautunut: "+kirjautunut);
+
+   //otetaan aika ylös formiin
+   let datetime = getTime();
+   const time = document.getElementById('logTime');
+   time.value = datetime;
+
+   //loopin sisälle arvot joilla annetaan id:t eri kuville
+    let n = 0;
+    let num =0
+    fetch('/pageLoad').then((response) => {
+      return response.json();
+    }).then((json) => {
+      const polku = 'files/';
+  //    lista.innerHTML = '';
+      popularUl.innerHTML = ""; //listan nollaus joka latauksella
+      console.log("JSON: ",json);
+      //laita json järjestykseen uppaus ajan perusteella
+      json.sort(function(a, b) {
+      console.log(a.upload_time+" ,"+b.upload_time );
+      return a.upload_time < b.upload_time;
+      });
+      json.sort();
+      console.log("New order json: ",json);
+
+      //Tämän loopin sisällä muutetaan formit
+      json.forEach(item => {
+        n++;
+      //  tee vain 5 kuvalle
+        if(n<=5){
+
+        const like = document.createElement('form');
+        const dislike = document.createElement('form');
+        const comments = document.createElement('form');
+        const report = document.createElement('form');
+        const view = document.createElement('form');
+        const commentArea = document.createElement('ul');
+        const views = document.createElement('div');
+        const uploadedBy = document.createElement('div');
+        const tags = document.createElement('div');
+
+        commentArea.id = "cA";
+
+
+        //laita formit like buttoneihin
+        like.innerHTML = '<form method="post" action="/like" id="form' + n +
+            '"><input type = "text" name ="tykkays" id="likeId' + n + '" value="'+item.tykkaa+'" /></form> <button type="submit" form="form' +
+            n + '" value="Submit">Like</button>';
+
+        dislike.innerHTML = '<form method="post" action="/dislike" id="dform' + n +
+            '"><input type = "text" name ="tykkays" id="dislikeId' + n + '" value="'+item.eitykkaa+'"/></form> <button type="submit" form="dform' +
+            n + '" value="Submit">Dislike</button>';
+
+        //Kommentit
+        comments.innerHTML = '<form method="post" action="/comment" id="comment' + n +
+            '"><input type = "text" name ="comment" id="kommentti' + n + '" value=""/></form> <button type="submit" form="comment' +
+            n + '" value="Submit">Comment</button>';
+
+        //report
+        report.innerHTML = '<form method="post" action="/report" id="report' + n +
+            '"><input type = "text" name ="report" id="reportInput' + n + '" value="'+ n +'"/></form> <button type="submit" form="report' +
+            n + '" value="Submit">Report</button>';
+
+        //view formi
+        view.innerHTML = '<form method="post" action="/view" id="viewForm' + n +
+                '"><input type = "hidden" name ="kuva_id" id="viewInput' + n + '" value="'+ json[num].kuva_id +'"/></form>'
+
+        //view form
+        //LIKE
+        view.method = 'post';
+        view.action = '/view';
+        view.id = 'viewForm' + n;
+
+
+
+        //views label
+        views.innerHTML = "<div> Views: "+json[num].views+" </div>";
+
+        //uploadDed by
+        uploadedBy.innerHTML = "<div> Uploaded by: "+json[num].kayttaja_nimi+" </div>"
+
+        //tags
+        tags.innerHTML =  "<div> Tags: "+json[num].tag+"</div>";
+
+
+        //tee li johon kaikki elementit liitetään
+        const li = document.createElement('li');
+        const kuva = document.createElement('img');
+        kuva.src = polku + json[num].URL;
+
+        //modali
+        const openModal = document.createElement('button');
+        openModal.innerHTML = '<button id=avaa  onclick=avaaModal('+n+')>Open modal</button>';
+        const modal = document.createElement('div');
+        modal.innerHTML = createModal(n,json[num].URL,like.innerHTML,dislike.innerHTML,comments.innerHTML,report.innerHTML);
+
+
+      //  console.log("modal nappi: "+openModal.innerHTML);
+
+        let i = json[num].kuva_id;
+        console.log("kuvI "+i);
+        view.appendChild(openModal);
+        view.addEventListener('submit', function(event) {
+        lahetaLomake6(event,i,kirjautunut);});
+
+        //Missä järjestyksessä haluat näyttää kuvan alla olevat asiat, vies tags jne.
+        li.appendChild(kuva);
+        li.appendChild(uploadedBy);
+        li.appendChild(views);
+      //  li.appendChild(openModal);
+        li.appendChild(modal);
+        li.appendChild(view);
+
+        //gridistä tasainen
+        const divi = document.createElement('div');
+        divi.appendChild(li);
+        popularUl.appendChild(divi);  //Lista on #result child
+
+
+        //muokkaa modalia
+        editModal(n,i,json,like.innerHTML,dislike.innerHTML,comments.innerHTML,report.innerHTML,kirjautunut);
+
+
+        //piilota modal jos ei ole kirjautunut
+        let bool = kirjautuneenNimi(kirjautunut);
+        tarkastusLuonninJalkeen(bool,n);
+      }else{
+        //ei enempää kuin 5 kuvaa
+      }
+          num++; //num lisätään lopussa, koska JSON alkaa nollasta
+      }); //foreach looppi loppuu
+    });
+  };
+
+ // lataaKuvat();
+</script>
+
+</html>
